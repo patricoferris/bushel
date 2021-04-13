@@ -23,10 +23,10 @@ module Store (S : Irmin.S with type key = string list and type step = string and
 
   let list tree site =
     S.Tree.list tree (posts_key site) >>= fun entries ->
-    Lwt_list.filter_map_p (fun (file_name, kind) ->
-      match kind with
-      | `Node -> Lwt.return None
-      | `Contents ->
+    Lwt_list.filter_map_p (fun (file_name, tree) ->
+      match S.Tree.destruct tree with
+      | `Node _ -> Lwt.return None
+      | `Contents _ ->
           find_by_site_and_name tree site file_name >|= fun post ->
           Some post
     ) entries

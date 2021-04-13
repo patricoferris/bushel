@@ -52,6 +52,7 @@ module Make(S : Irmin.S with type key = string list and type step = string and t
     let tags' = List.filter (fun tag' -> String.compare tag tag' <> 0) tags in
     add tags_type tree (tags_key key) tags' >>= fun tree ->
     tagged_keys tree ~tag >>= fun keys ->
-    let keys' = List.filter (fun key' -> Irmin.Type.compare (S.Key.t) key key' <> 0) keys in
+    let compare = Repr.unstage (Irmin.Type.compare (S.Key.t)) in 
+    let keys' = List.filter (fun key' -> compare key key' <> 0) keys in
     add tagged_keys_type tree (index_key tag) keys'
 end

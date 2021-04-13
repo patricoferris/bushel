@@ -21,26 +21,40 @@ end
 
 module Queries = struct
   module Repo = struct
-    let decode_date = Ptime_ext.of_json_exn
-    let decode_date_option = Option.map ~f:decode_date
 
-    let decode_pull_request_state = function
-      | `CLOSED -> Repository.Pull_request.Closed
-      | `MERGED -> Merged
-      | `OPEN -> Open
+    module Date = struct 
+      type t = Ptime.t 
+      let parse = Ptime_ext.of_json_exn
+
+      let serialisize t = `String (Ptime_ext.to_rfc3339 t)
+    end 
+
+    module PR = struct 
+      type t = Repository.Pull_request.state
+
+      let parse = function
+        | `CLOSED -> Repository.Pull_request.Closed
+        | `MERGED -> Merged
+        | `OPEN -> Open
+
+      let serialisize = function 
+        | Repository.Pull_request.Closed -> `String "CLOSED"
+        | Merged -> `String "MERGED"
+        | Open -> `String "OPEN"
+    end 
 
     include [%graphql {|
       query PR($owner: String!, $name: String!) {
         repository(owner: $owner, name: $name) {
-          updatedAt @bsDecoder(fn: "decode_date")
+          updatedAt @ppxCustom(module: "Date")
           pullRequests(first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
             nodes {
               number
               title
-              state @bsDecoder(fn: "decode_pull_request_state")
-              createdAt @bsDecoder(fn: "decode_date")
-              updatedAt @bsDecoder(fn: "decode_date")
-              mergedAt @bsDecoder(fn: "decode_date_option")
+              state @ppxCustom(module: "PR")
+              createdAt @ppxCustom(module: "Date")
+              updatedAt @ppxCustom(module: "Date")
+              mergedAt @ppxCustom(module: "Date")
               headRef {
                 id
               }
